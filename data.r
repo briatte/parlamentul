@@ -214,6 +214,11 @@ cat("Loaded:", nrow(s), "sponsors",
     sum(s$type == "Senator"), "senators",
     sum(s$type == "Deputat"), "MPs\n")
 
+# duplicate names
+s$name[ s$url == "parlam/structura.mp?idm=164&cam=2&leg=1996" ] = "Gheorghe Ana-1" # oldest
+s$name[ s$url == "parlam/structura.mp?idm=333&cam=2&leg=2012" ] = "Ovidiu Ioan Silaghi-1" # as PNL, 2012-2013
+s$name[ s$url == "parlam/structura.mp?idm=416&cam=2&leg=2012" ] = "Ovidiu Ioan Silaghi-2" # as independent, 2014-
+
 # national / linguistic / religious (FER) / ethnic minority (Minorităților) communities, except UDMR
 s$party[ grepl("^(Asociaţia|Comunitatea|Uniunea)", s$party) ] = "Minoritatilor"
 s$party[ grepl("Evreieşti|Germanilor|Albanezilor|Romilor|^FER$", s$party) ] = "Minoritatilor"
