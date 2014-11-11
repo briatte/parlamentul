@@ -92,7 +92,7 @@ for(jj in c("ca", "se")) {
     })
     
     # subset to chamber-specific cosponsored bills
-    bb$n_au = str_count(bb$authors, ";")
+    bb$n_au = 1 + str_count(bb$authors, ";")
     data = subset(bb, n_au > 1)
     
     cat(":", nrow(data), "cosponsored bills, ")
@@ -263,14 +263,14 @@ for(jj in c("ca", "se")) {
                   description = paste(mode, "placement", nrow(data), "bills"),
                   keywords = "parliament, romania")
       
-      node.att = data.frame(url = gsub("&", "&amp;", n %v% "url"), # protected
+      node.att = data.frame(url = gsub("parlam/structura.mp?idm=", "", gsub("&", "&amp;", n %v% "url")), # protected
                             party = n %v% "party",
                             bills = n %v% "n_bills",
                             # extra attributes
-                            type = n %v% "type",
+                            # type = n %v% "type",
                             constituency = n %v% "constituency",
                             distance = round(n %v% "distance", 1),
-                            photo = n %v% "photo",
+                            photo = gsub("photos/", "", n %v% "photo"),
                             stringsAsFactors = FALSE)
       
       people = data.frame(id = as.numeric(factor(network.vertex.names(n))),
@@ -309,10 +309,11 @@ for(jj in c("ca", "se")) {
   }
   
   if(gexf)
-    zip(paste0("net_ro_", jj, ".zip"), dir(pattern = paste0("^net_ro_", jj, "\\w+\\.gexf$")))
+    zip(paste0("net_ro_", jj, ".zip"), dir(pattern = paste0("^net_ro_", jj, "\\d{4}\\.gexf$")))
   
 }
 
-save(list = ls(pattern = "^(net|edges|bills)_ro"), file = "data/net_ro.rda")
+save(list = ls(pattern = "^(net|edges|bills)_ro_(ca|se)\\d{4}$"),
+     file = "data/net_ro.rda")
 
 # kthxbye
