@@ -226,9 +226,9 @@ s$party[ s$party == "independent" ] = "Independent"
 
 # absorptions and renamings
 s$party[ s$party == "PNL-CD" ] = "PNL" # Partidul Naţional Liberal - Convenţia Democrată 
-s$party[ s$party %in% c("PSDR", "PSM") ] = "PSD"
+s$party[ s$party %in% c("PDSR", "PSDR", "PSM") ] = "PSD" # absorbed FSN
 s$party[ s$party %in% c("PAR", "PAC") ] = "PNL" # small parties, absorbed 
-s$party[ s$party %in% c("PDSR", "PD", "PDL", "FC") ] = "PD-L" # renamed; FC (only 4 MPs) absorbed in 2014
+s$party[ s$party %in% c("PD", "PDL", "FC") ] = "PD-L" # renamed; FC (only 4 MPs) absorbed in 2014
 s$party[ s$party == "PUR-SL" ] = "PC" # renamed (Conservatives, allied to PSD then PNL)
 
 cbind(table(s$party, s$legislature), table(s$party))
