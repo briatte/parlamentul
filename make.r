@@ -26,6 +26,7 @@ dir.create("plots", showWarnings = FALSE)
 colors = c(
   "VERZII" = "#4DAF4A", # Partidul Verde, green
   "PER" = "#4DAF4A", # Partidul Ecologist Român, green
+  "FER" = "#B3DE69", # Federația Ecologistă din România, light green
   "PSD" = "#E41A1C", # Partidul Social Democrat, red
   "UNPR" = "#FB8072", # Uniunea Naţională pentru Progresul României (PSD/PNL splitters), light red
   "PNL" = "#FFFF33", # Partidul Național Liberal, yellow
@@ -44,7 +45,6 @@ colors = c(
 order = names(colors)
 
 source("data.r")
-# source("build.r")
 
 b$au_type = NA
 b$au_type[ grepl("cam=1", b$authors) & !grepl("cam=2", b$authors) ] = "Senate"

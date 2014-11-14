@@ -221,15 +221,15 @@ s$name[ s$url == "parlam/structura.mp?idm=416&cam=2&leg=2012" ] = "Ovidiu Ioan S
 
 # national / linguistic / religious (FER) / ethnic minority (Minorităților) communities, except UDMR
 s$party[ grepl("^(Asociaţia|Comunitatea|Uniunea)", s$party) ] = "Minoritatilor"
-s$party[ grepl("Evreieşti|Germanilor|Albanezilor|Romilor|^FER$", s$party) ] = "Minoritatilor"
+s$party[ grepl("Evreieşti|Germanilor|Albanezilor|Romilor", s$party) ] = "Minoritatilor"
 s$party[ s$party == "independent" ] = "Independent"
 
 # absorptions and renamings
-s$party[ s$party == "PNL-CD" ] = "PNL" # Partidul Naţional Liberal - Convenţia Democrată 
-s$party[ s$party %in% c("PDSR", "PSDR", "PSM") ] = "PSD" # absorbed FSN
-s$party[ s$party %in% c("PAR", "PAC") ] = "PNL" # small parties, absorbed 
-s$party[ s$party %in% c("PD", "PDL", "FC") ] = "PD-L" # renamed; FC (only 4 MPs) absorbed in 2014
+s$party[ s$party == "PNL-CD" ] = "PNL" # Partidul Naţional Liberal - Convenţia Democrată (coalition)
+s$party[ s$party %in% c("PDSR", "PSDR", "PSM") ] = "PSD" # absorbed FDSN
+s$party[ s$party %in% c("PD", "PDL", "FC") ] = "PD-L" # PD renamed to PD-L; FC (only 4 MPs) absorbed in 2014
 s$party[ s$party == "PUR-SL" ] = "PC" # renamed (Conservatives, allied to PSD then PNL)
+s$party[ s$party %in% c("PAR", "PAC") ] = "PNL" # small parties, absorbed
 
 cbind(table(s$party, s$legislature), table(s$party))
 cbind(table(s$type, s$legislature), table(s$type))
