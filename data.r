@@ -1,3 +1,7 @@
+root = "http://www.cdep.ro/pls/"
+bills = "data/bills.csv"
+sponsors = "data/sponsors.csv"
+
 # scrape bills and MP details from the Romanian Parliament, 1996-2014
 # covers approx. 45,000 bills, of which 13,000 by 2,600 parliamentarians
 # pretty slow on MP details; re-run a few times to solve network issues
@@ -129,9 +133,21 @@ if(!file.exists(sponsors)) {
       born = str_extract(gsub("(.*)n\\.(.*)", "\\2", nfo), "[0-9]{4}")
       
       # nb. mandates (counts both MP and senator mandates; many have both)
-      mdts = xpathSApply(h, "//b[contains(text(), 'dep.') or contains(text(), 'sen.')]", xmlValue)
-      mdts = sum(str_extract(mdts, "[0-9]{4}") <= l)
+#       mdts = xpathSApply(h, "//b[contains(text(), 'dep.') or contains(text(), 'sen.')]", xmlValue)
+#       mdts = sum(str_extract(mdts, "[0-9]{4}") <= l)
       
+      mdts_ca = xpathSApply(h, "//b[contains(text(), 'dep.')]", xmlValue)
+      if(length(mdts_ca))
+        mdts_ca = sum(str_extract(mdts_ca, "[0-9]{4}") < l)
+      else
+        mdts_ca = 0
+      
+      mdts_se = xpathSApply(h, "//b[contains(text(), 'sen.')]", xmlValue)
+      if(length(mdts_se))
+        mdts_se = sum(str_extract(mdts_se, "[0-9]{4}") < l)
+      else
+        mdts_se = 0
+
       sex = xpathSApply(h, "//a[contains(@href, 'structura.ce') or contains(@href, 'structura.gp')][1]/..", xmlValue)
       sex[ grepl("^aleasă\\s", sex) ] = "F"
       sex[ grepl("^ales\\s", sex) ] = "M"
@@ -191,7 +207,7 @@ if(!file.exists(sponsors)) {
       }
       
       s = rbind(s, data.frame(legislature = l, url = i, name, sex, born,
-                              party = n, party_dummy = o, nyears = 4 * mdts,
+                              party = n, party_dummy = o, mdts_ca, mdts_se,
                               constituency = circo, photo = p, stringsAsFactors = FALSE))
       
     }
@@ -214,15 +230,18 @@ cat("Loaded:", nrow(s), "sponsors",
     sum(s$type == "Senator"), "senators",
     sum(s$type == "Deputat"), "MPs\n")
 
+# mandates in the same chamber only (for comparability)
+s$nyears = ifelse(s$type == "Deputat", 4 * s$mdts_ca, 4 * s$mdts_se)
+
 # duplicate names
 s$name[ s$url == "parlam/structura.mp?idm=164&cam=2&leg=1996" ] = "Gheorghe Ana-1" # oldest
 s$name[ s$url == "parlam/structura.mp?idm=333&cam=2&leg=2012" ] = "Ovidiu Ioan Silaghi-1" # as PNL, 2012-2013
 s$name[ s$url == "parlam/structura.mp?idm=416&cam=2&leg=2012" ] = "Ovidiu Ioan Silaghi-2" # as independent, 2014-
 
 # national / linguistic / religious (FER) / ethnic minority (Minorităților) communities, except UDMR
-s$party[ grepl("^(Asociaţia|Comunitatea|Uniunea)", s$party) ] = "Minoritatilor"
-s$party[ grepl("Evreieşti|Germanilor|Albanezilor|Romilor", s$party) ] = "Minoritatilor"
-s$party[ s$party == "independent" ] = "Independent"
+s$party[ grepl("^(Asociaţia|Comunitatea|Uniunea)", s$party) ] = "MIN"
+s$party[ grepl("Evreieşti|Germanilor|Albanezilor|Romilor", s$party) ] = "MIN"
+s$party[ s$party == "independent" ] = "IND"
 
 # absorptions and renamings
 s$party[ s$party == "PNL-CD" ] = "PNL" # Partidul Naţional Liberal - Convenţia Democrată (coalition)
@@ -233,5 +252,45 @@ s$party[ s$party %in% c("PAR", "PAC") ] = "PNL" # small parties, absorbed
 
 cbind(table(s$party, s$legislature), table(s$party))
 cbind(table(s$type, s$legislature), table(s$type))
+
+# finalize bills data
+b$au_type = NA
+b$au_type[ grepl("cam=1", b$authors) & !grepl("cam=2", b$authors) ] = "Senate"
+b$au_type[ grepl("cam=2", b$authors) & !grepl("cam=1", b$authors) ] = "Chamber"
+b$au_type[ grepl("cam=1", b$authors) & grepl("cam=2", b$authors) ] = "both"
+
+# a third of cosponsored bills are cosponsored by members of both chambers
+table(b$au_type, b$n_au > 1)
+
+b$date = gsub("(.*)/(.*)", "\\2", b$ref)
+b$date = as.Date(strptime(b$date, "%d.%m.%Y"))
+b$legislature = NA
+b$legislature[ is.na(b$legislature) & b$date >= as.Date("2012-12-09") ] = "2012-2016"
+b$legislature[ is.na(b$legislature) & b$date >= as.Date("2008-11-30") ] = "2008-2012"
+b$legislature[ is.na(b$legislature) & b$date >= as.Date("2004-11-28") ] = "2004-2008"
+b$legislature[ is.na(b$legislature) & b$date >= as.Date("2000-11-26") ] = "2000-2004"
+b$legislature[ is.na(b$legislature) & b$date >= as.Date("1996-11-03") ] = "1996-2000"
+b$legislature[ b$date < as.Date("1996-11-03")  ] = NA
+
+# # a few bills do not have complete dates
+# b$year = str_sub(b$ref, start = -4)
+# b$legislature[ is.na(b$legislature) & b$year %in% 1997:2000 ] = "1996-2000"
+# b$legislature[ is.na(b$legislature) & b$year %in% 2001:2004 ] = "2000-2004"
+# b$legislature[ is.na(b$legislature) & b$year %in% 2005:2008 ] = "2004-2008"
+# b$legislature[ is.na(b$legislature) & b$year %in% 2009:2012 ] = "2008-2012"
+# b$legislature[ is.na(b$legislature) & b$year %in% 2013:2014 ] = "2012-2016"
+
+table(b$legislature, exclude = NULL) # excluding a handful of old bills
+
+# subset to recent cosponsored bills
+b = subset(b, !is.na(legislature) & !is.na(authors) & authors != "")
+b$authors = gsub("/pls/", "", b$authors)
+table(grepl(";", b$authors), b$legislature)
+
+# between 42% and 70% of bills are cosponsored (increases through time)
+prop.table(table(grepl(";", b$authors), b$legislature), 2)
+
+# sponsor identification through unique URLs
+rownames(s) = s$url
 
 # kthxbye
