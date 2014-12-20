@@ -170,8 +170,8 @@ for(jj in c("ca", "se")) {
     
     # replace unique URLs with names in vertex names and edge attributes
     network.vertex.names(n) = as.character(s[ network.vertex.names(n), "name" ])
-    n %e% "source" = s[ n %e% "source", "name" ]
-    n %e% "target" = s[ n %e% "target", "name" ]
+    set.edge.attribute(n, "source", s[ n %e% "source", "name" ])
+    set.edge.attribute(n, "target", s[ n %e% "target", "name" ])
     
     assign(paste0("net_ro_", jj, leg), n)
     assign(paste0("edges_ro_", jj, leg), edges)
