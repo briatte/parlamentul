@@ -215,8 +215,19 @@ if(!file.exists(sponsors)) {
     cat(name, "\n")
     
   }
-  
-  s$constituency[ s$constituency == "la nivel naţional" ] = "Naţional"
+
+  # constituencies
+  s$constituency = paste0(gsub("\\s", "_", s$constituency), "_County")
+  s$constituency = gsub("ţ", "ț", s$constituency)
+  s$constituency = gsub("ş", "ș", s$constituency)
+  s$constituency[ s$constituency == "Caraș-severin_County" ] = "Caraș-Severin_County"
+  s$constituency[ s$constituency == "Bistrița-năsăud_County" ] = "Bistrița-Năsăud_County"
+  s$constituency[ s$constituency == "Satu-mare_County" ] = "Satu_Mare_County"
+  s$constituency[ s$constituency == "Satu-mare_County" ] = "Satu_Mare_County"
+  s$constituency[ s$constituency == "București_County" ] = "Bucharest"
+  s$constituency[ s$constituency == "Diaspora_County" ] = "Romanian_diaspora"
+  s$constituency[ s$constituency == "la_nivel_național_County" ] = "Romanian_ethnic_minorities_parties"
+
   s$type = ifelse(grepl("cam=1", s$url), "Senator", "Deputat")
   # print(table(s$party_dummy))
   # s$photo[ !sapply(s$photo, file.exists) ] = NA
