@@ -38,6 +38,6 @@ The sponsors data has one row per sponsor-legislature.
 - `mdts_ca` -- number of mandates in the Camera (see `nyears`)
 - `mdts_se` -- number of mandates in the Senate (see `nyears`)
 - `nyears` -- number of past mandates in the same chamber
-- `constituency` -- constituency
+- `constituency` -- constituency, stored as the string to its Wikipedia English entry
 - `photo` -- photo URL, simplified to filename
 - `type` -- either "Deputat" or "Senator"
