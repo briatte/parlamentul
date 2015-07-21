@@ -1,7 +1,8 @@
 This repository contains code to build cosponsorship networks from bills passed in the [lower][ca] and [upper][se] chambers of the Romanian Parliament. 
 
-- [interactive demo](http://briatte.org/parlamentul/)
-- [static plots](http://briatte.org/parlamentul/plots.html)
+- [interactive demo](http://f.briatte.org/parlviz/parlamentul/)
+- [static plots](http://f.briatte.org/parlviz/parlamentul/plots.html)
+- [more countries](https://github.com/briatte/parlnet)
 
 [ca]: http://www.cdep.ro/
 [se]: http://www.senat.ro/
