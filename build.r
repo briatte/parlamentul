@@ -84,10 +84,11 @@ for(jj in c("ca", "se")) {
     edges = merge(edges, aggregate(w ~ j, function(x) sum(1 / x), data = self))
     edges$gsw = edges$nfw / edges$w
     
-    # final edge set: cosponsor, first author, weights
-    edges = edges[, c("i", "j", "raw", "nfw", "gsw") ]
-    
+    # sanity check
     stopifnot(edges$gsw <= 1)
+    
+    # final edge set: cosponsor, first author, weights
+    edges = select(edges, i, j, raw, nfw, gsw)
     
     cat(nrow(edges), "edges, ")
     
@@ -126,6 +127,11 @@ for(jj in c("ca", "se")) {
     # do not remove .jpg, a few photos are .gif
     n %v% "photo" = as.character(gsub("photos/", "", s[ network.vertex.names(n), "photo" ]))
     
+		# unweighted degree
+		n %v% "degree" = degree(n)
+		q = n %v% "degree"
+		q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
+		
     # check all sponsors come from the right chamber
     # print(table(s[ network.vertex.names(n), "type" ]))
     
@@ -137,27 +143,12 @@ for(jj in c("ca", "se")) {
     set.edge.attribute(n, "gsw", edges$gsw) # Gross-Shalizi weights
     
     #
-    # weighted measures
-    #
-    
-    n = get_modularity(n, weights = "raw", exclude = c("IND", "MIN"))
-    n = get_modularity(n, weights = "nfw", exclude = c("IND", "MIN"))
-    n = get_modularity(n, weights = "gsw", exclude = c("IND", "MIN"))
-    
-    n = get_centrality(n, weights = "raw")
-    n = get_centrality(n, weights = "nfw")
-    n = get_centrality(n, weights = "gsw")
-  
-    #
     # network plot
     #
     
     if(plot) {
       
-      q = n %v% "degree"
-      q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
-      
-      ggnet_save(n, file = paste0("plots/net_ro_", jj, ii),
+      save_plot(n, file = paste0("plots/net_ro_", jj, ii),
                  i = colors[ s[ n %e% "source", "party" ] ],
                  j = colors[ s[ n %e% "target", "party" ] ],
                  q, colors, order)
@@ -179,7 +170,7 @@ for(jj in c("ca", "se")) {
     
     # gexf
     if(gexf)
-      get_gexf(paste0("net_ro_", jj, leg), n, meta, mode, colors, extra = "constituency")
+      save_gexf(paste0("net_ro_", jj, leg), n, meta, mode, colors, extra = "constituency")
     
   }
   
