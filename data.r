@@ -241,6 +241,25 @@ cat("Loaded:", nrow(s), "sponsors",
     sum(s$type == "Senator"), "senators",
     sum(s$type == "Deputat"), "MPs\n")
 
+s$name[ is.na(s$born)]
+
+# https://pl.wikipedia.org/wiki/Doru-Claudian_Frunzulic%C4%83
+s$born[ s$name == "Doru-Claudian Frunzulică" ] = 1949
+# http://www.pnl.ro/download.php?f=subpagini_fisiere/Vlad_Octavian_Moisescu.doc
+s$born[ s$name == "Vlad-Octavian Moisescu" ] = 1967
+# http://www.finanteharghita.ro/files/docs/dgfp/contact/CV%20Kedves%20Emeric.pdf
+s$born[ s$name == "Emeric Kedves" ] = 1953
+# s$born[ s$name == "Radu-Vasile Roşca" ] = 0000
+# s$born[ s$name == "Ilona Szabó" ] = 0000
+# s$born[ s$name == "Traian Mândru" ] = 0000
+# https://ro.wikipedia.org/wiki/%C8%98erban_Br%C4%83di%C8%99teanu
+s$born[ s$name == "Şerban Alexandru Brădişteanu" ] = 1951
+s$born[ s$name == "Liviu Maior" ] = 1940
+# s$born[ s$name == "Ion Mihăilescu" ] = 0000
+# s$born[ s$name == "Tiberiu Simion Buza" ] = 0000
+# s$born[ s$name == "Emilian Prichici" ] = 0000
+# s$born[ s$name == "Constantin Bîciu" ] = 0000
+
 # mandates in the same chamber only (for comparability)
 s$nyears = ifelse(s$type == "Deputat", 4 * s$mdts_ca, 4 * s$mdts_se)
 
