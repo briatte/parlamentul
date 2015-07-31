@@ -127,11 +127,11 @@ for(jj in c("ca", "se")) {
     # do not remove .jpg, a few photos are .gif
     n %v% "photo" = as.character(gsub("photos/", "", s[ network.vertex.names(n), "photo" ]))
     
-		# unweighted degree
-		n %v% "degree" = degree(n)
-		q = n %v% "degree"
-		q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
-		
+    # unweighted degree
+    n %v% "degree" = degree(n)
+    q = n %v% "degree"
+    q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
+    
     # check all sponsors come from the right chamber
     # print(table(s[ network.vertex.names(n), "type" ]))
     
