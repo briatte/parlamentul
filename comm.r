@@ -2,7 +2,7 @@
 
 load("data/net_ro.rda")
 raw = data.frame()
-sponsors = dir("raw", pattern = "\\.html$", full.names = TRUE)
+sponsors = list.files("raw/mp-pages", full.names = TRUE)
 
 # find unique committees
 
@@ -31,9 +31,9 @@ comm = data.frame(l = unique(raw$l), stringsAsFactors = FALSE)
 
 # add sponsor columns
 for(i in sponsors)
-  comm[, gsub("raw/|\\.html", "", i) ] = 0
+  comm[, gsub("raw/mp-pages/mp-|\\.html", "", i) ] = 0
 
-raw$i = gsub("raw/|\\.html", "", raw$i)
+raw$i = gsub("raw/mp-pages/mp-|\\.html", "", raw$i)
 
 for(i in colnames(comm)[ -1 ])
   comm[ , i ] = as.numeric(comm$l %in% raw$l[ raw$i == i ])
@@ -46,7 +46,7 @@ for(i in ls(pattern = "^net_")) {
   
   sp = network.vertex.names(n)
   names(sp) = n %v% "url"
-  names(sp) = gsub("(.*)idm=(\\d+)&amp;cam=(\\d)&amp;leg=(\\d+)", "\\3_\\4_\\2", names(sp)) # URL to id
+  names(sp) = gsub("(.*)idm=(\\d+)&amp;cam=(\\d)&amp;leg=(\\d+)", "\\3-\\4-\\2", names(sp)) # URL to id
   stopifnot(names(sp) %in% colnames(comm))
   
   m = comm[ , names(sp) ]

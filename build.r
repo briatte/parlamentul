@@ -1,16 +1,8 @@
-meta = c("Romania", "Parlamentul")
-mode = "fruchtermanreingold"
-
 for(jj in c("ca", "se")) {
-  
-  if(jj == "ca")
-    meta = c(meta[1], "Camera Deputaților")
-  else
-    meta = c(meta[1], "Senat")
   
   for(ii in unique(b$legislature)) {
     
-    cat("\n", meta[2], ii)
+    cat("\n", meta[ jj ], ii)
     leg = substr(ii, 1, 4)
     
     # subset to cosponsored bills
@@ -26,6 +18,7 @@ for(jj in c("ca", "se")) {
     # subset to chamber-specific cosponsored bills
     bb$n_au = 1 + str_count(bb$authors, ";")
     data = subset(bb, n_au > 1)
+    sp = s[ s$legislature == leg, ]
     
     cat(":", nrow(data), "cosponsored documents, ")
     
@@ -33,21 +26,19 @@ for(jj in c("ca", "se")) {
     # directed edge list
     #
     
-    edges = bind_rows(lapply(data$authors, function(d) {
+    edges = lapply(data$authors, function(d) {
       
       w = unlist(strsplit(d, ";"))
       
-      d = expand.grid(i = s$url[ s$legislature == leg & s$url %in% w ],
-                      j = s$url[ s$legislature == leg & s$url == w[1]],
-                      stringsAsFactors = FALSE)
-
       # avoid adding sponsors from previous legislatures
-      if(nrow(d))
-        return(data.frame(d, w = length(w) - 1)) # number of cosponsors
-      else
-        return(data.frame())
+      d = expand.grid(i = sp$url[ sp$url %in% w ],
+                      j = sp$url[ sp$url == w[1]],
+                      stringsAsFactors = FALSE)
       
-    }))
+      if(nrow(d) > 0)
+        return(data.frame(d, w = length(w) - 1)) # number of cosponsors
+      
+    }) %>% bind_rows
     
     #
     # edge weights
@@ -98,9 +89,9 @@ for(jj in c("ca", "se")) {
     
     n = network(edges[, 1:2 ], directed = TRUE)
     
-    n %n% "country" = meta[1]
-    n %n% "title" = paste(meta[2], paste0(range(unique(substr(data$date, 1, 4))),
-                                          collapse = " to "))
+    n %n% "country" = meta[ "cty" ]
+    n %n% "title" = paste(meta[ jj ], paste0(range(unique(substr(data$date, 1, 4))),
+                                             collapse = " to "))
     
     n %n% "n_bills" = nrow(data)
     n %n% "n_sponsors" = table(bb$n_au) # chamber-specific dataset
@@ -170,7 +161,9 @@ for(jj in c("ca", "se")) {
     
     # gexf
     if(gexf)
-      save_gexf(paste0("net_ro_", jj, leg), n, meta, mode, colors, extra = "constituency")
+      save_gexf(paste0("net_ro_", jj, leg), n,
+                meta = c(meta[ "cty" ], meta[ jj ]), mode, colors,
+                extra = "constituency")
     
   }
   

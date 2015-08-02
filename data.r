@@ -6,28 +6,40 @@ sponsors = "data/sponsors.csv"
 # covers approx. 45,000 bills, of which 13,000 by 2,600 parliamentarians
 # pretty slow on MP details; re-run a few times to solve network issues
 
-if(!file.exists(bills)) {
+if (!file.exists(bills)) {
   
-  b = data.frame()
+  b = data_frame()
   
-  for(j in c(1, 2)) { # two chambers
+  for (j in c(1, 2)) { # two chambers
     
-    h = htmlParse(paste0("http://www.cdep.ro/pls/proiecte/upl_pck.home?cam=", j))
+    f = paste0("raw/bill-lists/bills-", j, ".html")
+    
+    if (!file.exists(f))
+      download.file(paste0("http://www.cdep.ro/pls/proiecte/upl_pck.home?cam=", j),
+                    f, mode = "wb", quiet = TRUE)
+    
+    h = htmlParse(f)
     h = xpathSApply(h, "//a[contains(@href, '&anp') or contains(@href, '&anb') or contains(@href, '&anl') or contains(@href, '&ans')]/@href")
     
-    for(i in unique(h)) {
+    for (i in unique(h)) {
       
       cat(i)
-      hh = htmlParse(paste0(root, "proiecte/", i))
+      f = paste0("raw/bill-lists/bills-", j, "-", gsub("=", "-", str_sub(i, -8)), ".html")
+      
+      if (!file.exists(f))
+        download.file(paste0(root, "proiecte/", i), f, mode = "wb", quiet = TRUE)
+      
+      hh = htmlParse(f)
       ref = xpathSApply(hh, "//a[contains(@href, 'idp=')]", xmlValue)
-      if(length(ref))
-        b = rbind(b,
-                  data.frame(
-                    page = i,
-                    url = xpathSApply(hh, "//a[contains(@href, 'idp=')]/@href"), ref,
-                    name = xpathSApply(hh, "//a[contains(@href, 'idp=')]/../following-sibling::td[1]", xmlValue),
-                    status = xpathSApply(hh, "//a[contains(@href, 'idp=')]/../following-sibling::td[2]", xmlValue),
-                    stringsAsFactors = FALSE))
+      
+      if (length(ref))
+        b = rbind(b, data.frame(
+          page = i,
+          url = xpathSApply(hh, "//a[contains(@href, 'idp=')]/@href"), ref,
+          name = xpathSApply(hh, "//a[contains(@href, 'idp=')]/../following-sibling::td[1]", xmlValue),
+          status = xpathSApply(hh, "//a[contains(@href, 'idp=')]/../following-sibling::td[2]", xmlValue)
+        ))
+      
       cat(":", sprintf("%5.0f", nrow(b)), "bills\n")
       
     }
@@ -45,21 +57,28 @@ cat("Loaded:", nrow(b), "bills\n")
 # scrape only links to bills that have no authors (including government bills)
 l = unique(b$url[ is.na(b$authors) ])
 
-if(length(l)) {
+if (length(l)) {
   
-  for(i in rev(l)) {
+  for (i in rev(l)) {
     
     cat(sprintf("%5.0f", which(l == i)), str_pad(i, 32, "right"))
-    hh = try(htmlParse(paste0(root, "proiecte/", i)), silent = TRUE)
     
-    if("try-error" %in% class(hh)) {
+    f = paste0("raw/bill-pages/bill-", gsub("(.*)cam=(\\d)&idp=(\\d+)", "\\2-\\3", i), ".html")
+    
+    if (!file.exists(f))
+      download.file(paste0(root, "proiecte/", i), f, mode = "wb", quiet = TRUE)
+    
+    if (!file.exists(f)) {
       
       cat(" : failed\n") # will be scraped again at re-run
+      file.remove(f)
       
     } else {
       
+      hh = htmlParse(f)
       hh = xpathSApply(hh, "//a[contains(@href, 'structura.mp?idm=')]/@href")
-      if(length(hh)) {
+      
+      if (length(hh)) {
         
         cat(" :", length(hh), "sponsor(s)\n")
         b$authors[ b$url == i ] = paste0(hh, collapse = ";")
@@ -90,37 +109,36 @@ if(length(l)) {
   b$n_au[ is.na(b$authors) ] = NA
   b$n_au[ b$authors == "" ] = 0
   
-  print(table(b$n_au, exclude = NULL))
-  print(table(b$n_au > 1, exclude = NULL))
-  print(table(b$n_au > 2, exclude = NULL))
+  table(b$n_au, exclude = NULL)
+  table(b$n_au > 1, exclude = NULL)
+  table(b$n_au > 2, exclude = NULL)
   
   write.csv(b, bills, row.names = FALSE)
   
 }
 
-if(!file.exists(sponsors)) {
+if (!file.exists(sponsors)) {
   
   a = unique(gsub("^/pls/", "", unlist(strsplit(b$authors, ";"))))
-  s = data.frame()
+  s = data_frame()
   
-  for(i in rev(a)) {
+  for (i in rev(a)) {
     
-    # filename: chamber_legislature_id.html
+    # filename: chamber-legislature-id.html
     # ids are not attached to persons: id 3 in 1992 is not the same person as id 3 in 2004
-    j = gsub("(.*)idm=(\\d+)&cam=(\\d)&leg=(\\d+)", "raw/\\3_\\4_\\2.html", i)
+    j = gsub("(.*)idm=(\\d+)&cam=(\\d)&leg=(\\d+)", "raw/mp-pages/mp-\\3-\\4-\\2.html", i)
     cat(sprintf("%5.0f", which(a == i)), str_pad(i, 45, "right"))
     
-    if(!file.exists(j)) {
+    if (!file.exists(j))
+      download.file(paste0(root, i), j, quiet = TRUE, mode = "wb")
       
-      f = try(download.file(paste0(root, i), j, quiet = TRUE, mode = "wb"), silent = TRUE)
+    if (!file.info(j)$size) {
       
-      if("try-error" %in% class(f) | !file.info(j)$size)
-        file.remove(j)
+      cat(": failed\n")
+      file.remove(j)
       
-    }
+    } else {
     
-    if(file.exists(j)) {
-      
       l = gsub("(.*)&leg=(\\d+)", "\\2", i) # legislature start
       h = htmlParse(j)
       nfo = xpathSApply(h, "//td[@class='menuoff']", xmlValue)
@@ -137,23 +155,27 @@ if(!file.exists(sponsors)) {
 #       mdts = sum(str_extract(mdts, "[0-9]{4}") <= l)
       
       mdts_ca = xpathSApply(h, "//b[contains(text(), 'dep.')]", xmlValue)
-      if(length(mdts_ca))
+      if (length(mdts_ca))
         mdts_ca = sum(str_extract(mdts_ca, "[0-9]{4}") < l)
       else
         mdts_ca = 0
       
       mdts_se = xpathSApply(h, "//b[contains(text(), 'sen.')]", xmlValue)
-      if(length(mdts_se))
+      if (length(mdts_se))
         mdts_se = sum(str_extract(mdts_se, "[0-9]{4}") < l)
       else
         mdts_se = 0
 
-      sex = xpathSApply(h, "//a[contains(@href, 'structura.ce') or contains(@href, 'structura.gp')][1]/..", xmlValue)
+      sex = xpathSApply(h, "//a[contains(@href, 'structura.ce') or contains(@href, 'structura.gp')][1]/..", 
+                        xmlValue)
+      
       sex[ grepl("^aleasă\\s", sex) ] = "F"
       sex[ grepl("^ales\\s", sex) ] = "M"
       sex[ !sex %in% c("F", "M") ] = NA # none missing
       
-      circo = xpathSApply(h, "//a[contains(@href, 'structura.ce') or contains(@href, 'structura.gp')][1]", xmlValue)
+      circo = xpathSApply(h, "//a[contains(@href, 'structura.ce') or contains(@href, 'structura.gp')][1]", 
+                          xmlValue)
+      
       # circo = grps[1] # constituency
       # grps = grps[-1] # parliamentary group(s) -- without start-end dates
       circo = paste0(substr(circo, 1, 1), tolower(substring(circo, 2))) # capitalize
@@ -163,7 +185,7 @@ if(!file.exists(sponsors)) {
       # full party names
       n = xpathSApply(h, "//a[contains(@href, 'structura.fp')]", xmlValue)
       
-      if(length(n) > 1) {
+      if (length(n) > 1) {
         
         # years in each party; simplifies some common transitions:
         # - independent just before elections
@@ -171,9 +193,10 @@ if(!file.exists(sponsors)) {
         # - PUR-SL to PC (Partidul Conservator)
         m = sapply(m, str_extract_all, "[0-9]{4}")
         
-        if(length(m[[1]]) == 1) # până în (first)
+        if (length(m[[1]]) == 1) # până în (first)
           m[[1]] = c(l, m[[1]])
-        if(length(m[[ length(m) ]]) == 1) # până în (last)
+        
+        if (length(m[[ length(m) ]]) == 1) # până în (last)
           m[[ length(m) ]] = c(m[[ length(m) ]], as.numeric(l) + 4)
         
         # length of stay in each party, in approximate years
@@ -182,7 +205,7 @@ if(!file.exists(sponsors)) {
         
         # approx. 148 ambiguous cases out of 2612 (5%)
         o = which(m == max(m))
-        if(length(o) == 1) {
+        if (length(o) == 1) {
           n = n[ which(m == max(m)) ]
           o = 0
         } else {
@@ -193,26 +216,29 @@ if(!file.exists(sponsors)) {
       }
       
       photo = xpathSApply(h, "//img[contains(@src, 'parlamentari')]/@src")
-      if(!length(photo))
+      
+      if (!length(photo))
         p = NA
       else {
         p = gsub("(.*)/(.*)", "photos/\\2", photo)
-        if(!file.exists(p))
+        if (!file.exists(p))
           try(download.file(gsub("^/", "http://www.cdep.ro/", photo), p, mode = "wb", quiet = TRUE),
               silent = TRUE)
-        if(!file.info(p)$size) {
+        if (!file.info(p)$size) {
           file.remove(p)
           p = NA
         }
       }
       
-      s = rbind(s, data.frame(legislature = l, url = i, name, sex, born,
-                              party = n, party_dummy = o, mdts_ca, mdts_se,
-                              constituency = circo, photo = p, stringsAsFactors = FALSE))
+      s = rbind(s, data_frame(
+        legislature = l, url = i, name, sex, born,
+        party = n, party_dummy = o, mdts_ca, mdts_se,
+        constituency = circo, photo = p
+      ))
       
     }
     
-    cat(name, "\n")
+    cat(":", name, "\n")
     
   }
 
@@ -237,6 +263,7 @@ if(!file.exists(sponsors)) {
 }
 
 s = read.csv(sponsors, stringsAsFactors = FALSE)
+
 cat("Loaded:", nrow(s), "sponsors",
     sum(s$type == "Senator"), "senators",
     sum(s$type == "Deputat"), "MPs\n")
