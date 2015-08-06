@@ -46,7 +46,7 @@ source("data.r")  # scrape bills and sponsors
 source("build.r") # assemble the networks
 source("comm.r")  # add committee co-membership
 
-save(list = ls(pattern = "^((co)?net|edges|bills)_ro_(ca|se)\\d{4}$"),
+save(list = ls(pattern = "^(co)?(net|edges|bills)_ro_(ca|se)\\d{4}$"),
      file = "data/net_ro.rda")
 
 # have a nice day

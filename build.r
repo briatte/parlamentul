@@ -22,9 +22,9 @@ for (jj in c("ca", "se")) {
     
     cat(":", nrow(data), "cosponsored documents, ")
     
-    #
-    # directed edge list
-    #
+    # ==========================================================================
+    # DIRECTED EDGE LIST
+    # ==========================================================================
     
     edges = lapply(data$authors, function(d) {
       
@@ -41,9 +41,9 @@ for (jj in c("ca", "se")) {
       
     }) %>% bind_rows
     
-    #
-    # edge weights
-    #
+    # ==========================================================================
+    # EDGE WEIGHTS
+    # ==========================================================================
     
     # first author self-loops, with counts of cosponsors
     self = subset(edges, i == j)
@@ -84,9 +84,9 @@ for (jj in c("ca", "se")) {
     
     cat(nrow(edges), "edges, ")
     
-    #
-    # directed network
-    #
+    # ==========================================================================
+    # DIRECTED NETWORK
+    # ==========================================================================
     
     n = network(edges[, 1:2 ], directed = TRUE)
     
@@ -101,7 +101,11 @@ for (jj in c("ca", "se")) {
     
     n %n% "n_cosponsored" = nrow(data)
     n %n% "n_sponsors" = table(bb$n_au) # chamber-specific dataset
-    
+
+    # ==========================================================================
+    # VERTEX-LEVEL ATTRIBUTES
+    # ==========================================================================
+
     n_au = as.vector(n_au[ network.vertex.names(n) ])
     n %v% "n_au" = ifelse(is.na(n_au), 0, n_au)
     
@@ -112,8 +116,6 @@ for (jj in c("ca", "se")) {
     
     cat(network.size(n), "nodes\n")
         
-    # n %v% "url" = as.character(gsub("parlam/structura.mp?idm=", "", 
-                                    # gsub("&", "&amp;", s[ network.vertex.names(n), "url" ])))
     n %v% "url" = s[ network.vertex.names(n), "url" ]
     n %v% "sex" = s[ network.vertex.names(n), "sex" ]
     n %v% "born" = s[ network.vertex.names(n), "born" ]
@@ -135,9 +137,9 @@ for (jj in c("ca", "se")) {
     set.edge.attribute(n, "nfw", edges$nfw) # Newman-Fowler weights
     set.edge.attribute(n, "gsw", edges$gsw) # Gross-Shalizi weights
     
-    #
-    # network plot
-    #
+    # ==========================================================================
+    # SAVE PLOTS
+    # ==========================================================================
     
     if (plot) {
       
@@ -148,9 +150,9 @@ for (jj in c("ca", "se")) {
       
     }
     
-    #
-    # save objects
-    #
+    # ==========================================================================
+    # SAVE OBJECTS
+    # ==========================================================================
     
     # replace unique URLs with names in vertex names and edge attributes
     network.vertex.names(n) = as.character(s[ network.vertex.names(n), "name" ])
