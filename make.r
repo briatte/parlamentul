@@ -7,25 +7,46 @@ source("parties.r")
 # folders
 
 dir.create("data"   , showWarnings = FALSE)
-dir.create("photos" , showWarnings = FALSE)
 dir.create("plots"  , showWarnings = FALSE)
+
+if (file.exists("raw.zip"))
+  unzip("raw.zip")
 
 dir.create("raw"            , showWarnings = FALSE)
 dir.create("raw/bill-lists" , showWarnings = FALSE)
 dir.create("raw/bill-pages" , showWarnings = FALSE)
 dir.create("raw/mp-pages"   , showWarnings = FALSE)
 
+if (file.exists("photos.zip"))
+  unzip("photos.zip")
+
+dir.create("photos" , showWarnings = FALSE)
+
 # parameters
 
 plot = TRUE
 gexf = TRUE
-meta = c("cty" = "Romania", "ca" = "Camera Deputaților", "se" = "Senat")
 mode = "fruchtermanreingold"
+meta = c(
+  "cty" = "Romania",
+  "lang" = "ro", # Wikipedia language for chamber and constituencies
+  "ca" = "Camera_Deputaților_din_România",
+  "se" = "Senatul_României",
+  "type-ca" = "Lower",
+  "type-se" = "Upper",
+  "ipu-ca" = 2261,
+  "ipu-se" = 2262,
+  "seats-ca" = 412,
+  "seats-se" = 176
+)
 
 # build routine
 
 source("data.r")  # scrape bills and sponsors
 source("build.r") # assemble the networks
 source("comm.r")  # add committee co-membership
+
+save(list = ls(pattern = "^((co)?net|edges|bills)_ro_(ca|se)\\d{4}$"),
+     file = "data/net_ro.rda")
 
 # have a nice day

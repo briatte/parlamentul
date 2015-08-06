@@ -1,6 +1,6 @@
-for(jj in c("ca", "se")) {
+for (jj in c("ca", "se")) {
   
-  for(ii in unique(b$legislature)) {
+  for (ii in unique(b$legislature) %>% sort) {
     
     cat("\n", meta[ jj ], ii)
     leg = substr(ii, 1, 4)
@@ -29,13 +29,14 @@ for(jj in c("ca", "se")) {
     edges = lapply(data$authors, function(d) {
       
       w = unlist(strsplit(d, ";"))
+      w = paste0(root, w)
       
       # avoid adding sponsors from previous legislatures
       d = expand.grid(i = sp$url[ sp$url %in% w ],
                       j = sp$url[ sp$url == w[1]],
                       stringsAsFactors = FALSE)
       
-      if(nrow(d) > 0)
+      if (nrow(d) > 0)
         return(data.frame(d, w = length(w) - 1)) # number of cosponsors
       
     }) %>% bind_rows
@@ -66,10 +67,10 @@ for(jj in c("ca", "se")) {
     edges = aggregate(w ~ ij, function(x) sum(1 / x), data = edges)
     
     # expand to edge list
-    edges = data.frame(i = gsub("(.*)///(.*)", "\\1", edges$ij),
+    edges = data_frame(i = gsub("(.*)///(.*)", "\\1", edges$ij),
                        j = gsub("(.*)///(.*)", "\\2", edges$ij),
                        raw = as.vector(raw[ edges$ij ]), # raw edge counts
-                       nfw = edges$w, stringsAsFactors = FALSE)
+                       nfw = edges$w)
     
     # Gross-Shalizi weights (weighted propensity to cosponsor)
     edges = merge(edges, aggregate(w ~ j, function(x) sum(1 / x), data = self))
@@ -89,11 +90,16 @@ for(jj in c("ca", "se")) {
     
     n = network(edges[, 1:2 ], directed = TRUE)
     
-    n %n% "country" = meta[ "cty" ]
-    n %n% "title" = paste(meta[ jj ], paste0(range(unique(substr(data$date, 1, 4))),
-                                             collapse = " to "))
+    n %n% "country" = meta[ "cty" ] %>% as.character
+    n %n% "lang" = meta[ "lang" ] %>% as.character
+    n %n% "years" = ii %>% as.character
+    n %n% "legislature" = NA_character_
+    n %n% "chamber" = meta[ jj ] %>% as.character
+    n %n% "type" = meta[ paste0("type-", jj) ] %>% as.character
+    n %n% "ipu" = meta[ paste0("ipu-", jj) ] %>% as.integer
+    n %n% "seats" = meta[ paste0("seats-", jj) ] %>% as.integer
     
-    n %n% "n_bills" = nrow(data)
+    n %n% "n_cosponsored" = nrow(data)
     n %n% "n_sponsors" = table(bb$n_au) # chamber-specific dataset
     
     n_au = as.vector(n_au[ network.vertex.names(n) ])
@@ -106,22 +112,18 @@ for(jj in c("ca", "se")) {
     
     cat(network.size(n), "nodes\n")
         
-    n %v% "url" = as.character(gsub("parlam/structura.mp?idm=", "", 
-                                    gsub("&", "&amp;", s[ network.vertex.names(n), "url" ])))
-    n %v% "sex" = as.character(s[ network.vertex.names(n), "sex" ])
-    n %v% "born" = as.numeric(s[ network.vertex.names(n), "born" ]) # already years, no need to substr
-    n %v% "party" = as.character(s[ network.vertex.names(n), "party" ])
-    n %v% "partyname" = as.character(parties[ n %v% "party" ])
-    n %v% "lr" = as.numeric(scores[ n %v% "party" ])
-    n %v% "nyears" = as.numeric(s[ network.vertex.names(n), "nyears" ])
-    n %v% "constituency" = as.character(s[ network.vertex.names(n), "constituency" ])
+    # n %v% "url" = as.character(gsub("parlam/structura.mp?idm=", "", 
+                                    # gsub("&", "&amp;", s[ network.vertex.names(n), "url" ])))
+    n %v% "url" = s[ network.vertex.names(n), "url" ]
+    n %v% "sex" = s[ network.vertex.names(n), "sex" ]
+    n %v% "born" = s[ network.vertex.names(n), "born" ]
+    n %v% "party" = s[ network.vertex.names(n), "party" ]
+    n %v% "partyname" = groups[ n %v% "party" ] %>% as.character
+    n %v% "lr" = scores[ n %v% "party" ] %>% as.numeric
+    n %v% "nyears" = s[ network.vertex.names(n), "nyears" ]
+    n %v% "constituency" = s[ network.vertex.names(n), "constituency" ]
     # do not remove .jpg, a few photos are .gif
-    n %v% "photo" = as.character(gsub("photos/", "", s[ network.vertex.names(n), "photo" ]))
-    
-    # unweighted degree
-    n %v% "degree" = degree(n)
-    q = n %v% "degree"
-    q = as.numeric(cut(q, unique(quantile(q)), include.lowest = TRUE))
+    n %v% "photo" = s[ network.vertex.names(n), "photo" ]
     
     # check all sponsors come from the right chamber
     # print(table(s[ network.vertex.names(n), "type" ]))
@@ -137,12 +139,12 @@ for(jj in c("ca", "se")) {
     # network plot
     #
     
-    if(plot) {
+    if (plot) {
       
-      save_plot(n, file = paste0("plots/net_ro_", jj, ii),
-                 i = colors[ s[ n %e% "source", "party" ] ],
-                 j = colors[ s[ n %e% "target", "party" ] ],
-                 q, colors, order)
+      save_plot(n, paste0("plots/net_ro_", jj, ii),
+                i = colors[ s[ n %e% "source", "party" ] ],
+                j = colors[ s[ n %e% "target", "party" ] ],
+                mode, colors)
       
     }
     
@@ -160,17 +162,12 @@ for(jj in c("ca", "se")) {
     assign(paste0("bills_ro_", jj, leg), data)
     
     # gexf
-    if(gexf)
-      save_gexf(paste0("net_ro_", jj, leg), n,
-                meta = c(meta[ "cty" ], meta[ jj ]), mode, colors,
-                extra = "constituency")
+    if (gexf)
+      save_gexf(n, paste0("net_ro_", jj, leg), mode, colors)
     
   }
   
-  if(gexf)
+  if (gexf)
     zip(paste0("net_ro_", jj, ".zip"), dir(pattern = paste0("^net_ro_", jj, "\\d{4}\\.gexf$")))
   
 }
-
-save(list = ls(pattern = "^(net|edges|bills)_ro_(ca|se)\\d{4}$"),
-     file = "data/net_ro.rda")

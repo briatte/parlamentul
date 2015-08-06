@@ -264,6 +264,26 @@ if (!file.exists(sponsors)) {
 
 s = read.csv(sponsors, stringsAsFactors = FALSE)
 
+# ==============================================================================
+# CHECK CONSTITUENCIES
+# ==============================================================================
+
+cat("Checking constituencies,", sum(is.na(s$constituency)), "missing...\n")
+for (i in unique(s$constituency)) {
+  
+  g = GET(paste0("https://en.wikipedia.org/wiki/", i))
+  
+  if (status_code(g) != 200)
+    cat("Missing Wikipedia entry:", i, "\n")
+  
+  g = xpathSApply(htmlParse(g), "//title", xmlValue)
+  g = gsub("(.*) - Wikipedia(.*)", "\\1", g)
+  
+  if (gsub("\\s", "_", g) != i)
+    cat("Discrepancy:", g, "(WP) !=", i ,"(data)\n")
+  
+}
+
 cat("Loaded:", nrow(s), "sponsors",
     sum(s$type == "Senator"), "senators",
     sum(s$type == "Deputat"), "MPs\n")
@@ -289,6 +309,7 @@ s$born[ s$name == "Liviu Maior" ] = 1940
 
 # mandates in the same chamber only (for comparability)
 s$nyears = ifelse(s$type == "Deputat", 4 * s$mdts_ca, 4 * s$mdts_se)
+s$nyears = as.integer(s$nyears)
 
 # duplicate names
 s$name[ s$url == "parlam/structura.mp?idm=164&cam=2&leg=1996" ] = "Gheorghe Ana-1" # oldest
@@ -347,7 +368,33 @@ table(grepl(";", b$authors), b$legislature)
 # between 42% and 70% of bills are cosponsored (increases through time)
 prop.table(table(grepl(";", b$authors), b$legislature), 2)
 
+s$url = paste0(root, s$url)
+s$born = as.integer(s$born)
+
 # sponsor identification through unique URLs
 rownames(s) = s$url
 
-# kthxbye
+# ============================================================================
+# QUALITY CONTROL
+# ============================================================================
+
+# - might be missing: born (int of length 4), constituency (chr),
+#   photo (chr, folder/file.ext)
+# - never missing: sex (chr, F/M), nyears (int), url (chr, URL),
+#   party (chr, mapped to colors)
+
+cat("Missing", sum(is.na(s$born)), "years of birth\n")
+stopifnot(is.integer(s$born) & nchar(s$born) == 4 | is.na(s$born))
+
+cat("Missing", sum(is.na(s$constituency)), "constituencies\n")
+stopifnot(is.character(s$constituency))
+
+cat("Missing", sum(is.na(s$photo)), "photos\n")
+stopifnot(is.character(s$photo) & grepl("^photos(_\\w{2})?/(.*)\\.\\w{3}", s$photo) | is.na(s$photo))
+
+stopifnot(!is.na(s$sex) & s$sex %in% c("F", "M"))
+stopifnot(!is.na(s$nyears) & is.integer(s$nyears))
+stopifnot(!is.na(s$url) & grepl("^http(s)?://(.*)", s$url))
+stopifnot(s$party %in% names(colors))
+
+# done
