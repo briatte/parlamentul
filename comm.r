@@ -12,7 +12,7 @@ for (i in sponsors) {
   n = xpathSApply(h, "//a[contains(@href, 'idc=')]", xmlValue)
   l = xpathSApply(h, "//a[contains(@href, 'idc=')]/@href")
   if (length(l))
-    raw = rbind(raw, unique(data.frame(i, n, l, stringsAsFactors = FALSE)))
+    raw = rbind(raw, unique(data_frame(i, n, l)))
   
 }
 
@@ -26,7 +26,7 @@ write.csv(raw[, -1 ] %>%
             unique, "data/committees.csv", row.names = FALSE)
 
 # unique committees, using URLs
-comm = data.frame(l = unique(raw$l), stringsAsFactors = FALSE)
+comm = data_frame(l = unique(raw$l))
 
 # add sponsor columns
 for (i in sponsors)
@@ -60,9 +60,7 @@ for (i in ls(pattern = "^net_ro")) {
   colnames(m) = sp[ colnames(m) ]
   rownames(m) = sp[ rownames(m) ]
   
-  e = data.frame(i = n %e% "source",
-                 j = n %e% "target",
-                 stringsAsFactors = FALSE)
+  e = data_frame(i = n %e% "source", j = n %e% "target")
   e$committee = NA
   
   for (j in 1:nrow(e))
