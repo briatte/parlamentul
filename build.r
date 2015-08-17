@@ -165,11 +165,12 @@ for (jj in c("ca", "se")) {
     
     # gexf
     if (gexf)
-      save_gexf(n, paste0("net_ro_", jj, leg), mode, colors)
+      save_gexf(n, paste0("net_ro_", jj, ii), mode, colors)
     
   }
   
   if (gexf)
-    zip(paste0("net_ro_", jj, ".zip"), dir(pattern = paste0("^net_ro_", jj, "\\d{4}\\.gexf$")))
+    zip(paste0("net_ro_", jj, ".zip"),
+        dir(pattern = paste0("^net_ro_", jj, "\\d{4}-\\d{4}\\.gexf$")))
   
 }
