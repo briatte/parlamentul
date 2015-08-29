@@ -361,7 +361,7 @@ b$legislature[ b$date < as.Date("1996-11-03")  ] = NA
 table(b$legislature, exclude = NULL) # excluding a handful of old bills
 
 # subset to recent cosponsored bills
-b = subset(b, !is.na(legislature) & !is.na(authors) & authors != "")
+b = filter(b, !is.na(legislature), !is.na(authors), authors != "")
 b$authors = gsub("/pls/", "", b$authors)
 table(grepl(";", b$authors), b$legislature)
 

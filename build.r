@@ -4,21 +4,24 @@ for (jj in c("ca", "se")) {
     
     cat("\n", meta[ jj ], ii)
     leg = substr(ii, 1, 4)
+    cam = paste0("cam=", ifelse(jj == "ca", 2, 1))
     
     # subset to cosponsored bills
-    bb = subset(b, legislature == ii & n_au > 1)
+    bb = filter(b, legislature == ii & n_au > 1)
     
-    # further subset to specific chamber
+    # further subset to sponsors of chamber and legislature
     bb$authors = sapply(bb$authors, function(x) {
-      x = unlist(strsplit(x, ";"))
-      x = x[ grepl(paste0("cam=", ifelse(jj == "ca", 2, 1)), x) ]
-      return(paste0(x, collapse = ";"))
+      x = strsplit(x, ";") %>% unlist
+      x = x[ grepl(cam, x) & grepl(paste0("leg=", leg), x) ]
+      return(paste0(paste0(root, x), collapse = ";"))
     })
     
     # subset to chamber-specific cosponsored bills
     bb$n_au = 1 + str_count(bb$authors, ";")
-    data = subset(bb, n_au > 1)
-    sp = s[ s$legislature == leg, ]
+    data = filter(bb, n_au > 1)
+    
+    sp = filter(s, legislature == leg, grepl(cam, url))
+    rownames(sp) = sp$name
     
     cat(":", nrow(data), "cosponsored documents, ")
     
@@ -29,15 +32,11 @@ for (jj in c("ca", "se")) {
     edges = lapply(data$authors, function(d) {
       
       w = unlist(strsplit(d, ";"))
-      w = paste0(root, w)
       
-      # avoid adding sponsors from previous legislatures
-      d = expand.grid(i = sp$url[ sp$url %in% w ],
-                      j = sp$url[ sp$url == w[1]],
-                      stringsAsFactors = FALSE)
-      
-      if (nrow(d) > 0)
-        return(data.frame(d, w = length(w) - 1)) # number of cosponsors
+      return(expand.grid(i = sp$name[ sp$url %in% w ],
+                         j = sp$name[ sp$url == w[1]],
+                         w = length(w) - 1, # number of cosponsors
+                         stringsAsFactors = FALSE))
       
     }) %>% bind_rows
     
@@ -46,13 +45,13 @@ for (jj in c("ca", "se")) {
     # ==========================================================================
     
     # first author self-loops, with counts of cosponsors
-    self = subset(edges, i == j)
+    self = filter(edges, i == j)
     
     # count number of bills per first author
     n_au = table(self$j)
     
     # remove self-loops from directed edge list
-    edges = subset(edges, i != j)
+    edges = filter(edges, i != j)
     
     # count number of bills cosponsored per sponsor
     n_co = table(edges$i)
@@ -115,20 +114,16 @@ for (jj in c("ca", "se")) {
     n %v% "n_bills" = n %v% "n_au" + n %v% "n_co"
     
     cat(network.size(n), "nodes\n")
-        
-    n %v% "url" = s[ network.vertex.names(n), "url" ]
-    n %v% "sex" = s[ network.vertex.names(n), "sex" ]
-    n %v% "born" = s[ network.vertex.names(n), "born" ]
-    n %v% "party" = s[ network.vertex.names(n), "party" ]
+    
+    n %v% "url" = sp[ network.vertex.names(n), "url" ]
+    n %v% "sex" = sp[ network.vertex.names(n), "sex" ]
+    n %v% "born" = sp[ network.vertex.names(n), "born" ]
+    n %v% "party" = sp[ network.vertex.names(n), "party" ]
     n %v% "partyname" = groups[ n %v% "party" ] %>% as.character
     n %v% "lr" = scores[ n %v% "party" ] %>% as.numeric
-    n %v% "nyears" = s[ network.vertex.names(n), "nyears" ]
-    n %v% "constituency" = s[ network.vertex.names(n), "constituency" ]
-    # do not remove .jpg, a few photos are .gif
-    n %v% "photo" = s[ network.vertex.names(n), "photo" ]
-    
-    # check all sponsors come from the right chamber
-    # print(table(s[ network.vertex.names(n), "type" ]))
+    n %v% "nyears" = sp[ network.vertex.names(n), "nyears" ]
+    n %v% "constituency" = sp[ network.vertex.names(n), "constituency" ]
+    n %v% "photo" = sp[ network.vertex.names(n), "photo" ]
     
     set.edge.attribute(n, "source", as.character(edges[, 1])) # cosponsor
     set.edge.attribute(n, "target", as.character(edges[, 2])) # first author
@@ -144,8 +139,8 @@ for (jj in c("ca", "se")) {
     if (plot) {
       
       save_plot(n, paste0("plots/net_ro_", jj, ii),
-                i = colors[ s[ n %e% "source", "party" ] ],
-                j = colors[ s[ n %e% "target", "party" ] ],
+                i = colors[ sp[ n %e% "source", "party" ] ],
+                j = colors[ sp[ n %e% "target", "party" ] ],
                 mode, colors)
       
     }
@@ -153,12 +148,7 @@ for (jj in c("ca", "se")) {
     # ==========================================================================
     # SAVE OBJECTS
     # ==========================================================================
-    
-    # replace unique URLs with names in vertex names and edge attributes
-    network.vertex.names(n) = as.character(s[ network.vertex.names(n), "name" ])
-    set.edge.attribute(n, "source", s[ n %e% "source", "name" ])
-    set.edge.attribute(n, "target", s[ n %e% "target", "name" ])
-    
+
     assign(paste0("net_ro_", jj, leg), n)
     assign(paste0("edges_ro_", jj, leg), edges)
     assign(paste0("bills_ro_", jj, leg), data)

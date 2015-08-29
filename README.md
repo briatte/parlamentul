@@ -35,10 +35,10 @@ The sponsors data has one row per sponsor-legislature.
 - `sex` -- gender (F/M), imputed from birth information ("aleasă")
 - `born` -- year of birth
 - `party` -- political party, abbreviated
-- `party_dummy` -- numeric dummy to indicate the presence of multiple political parties
-- `mdts_ca` -- number of mandates in the Camera (see `nyears`)
-- `mdts_se` -- number of mandates in the Senate (see `nyears`)
+- `party_dummy` -- dummy indicating the presence of multiple party affiliations
+- `mdts_ca` -- number of mandates in the lower chamber
+- `mdts_se` -- number of mandates in the upper chamber
 - `nyears` -- number of past mandates in the same chamber
-- `constituency` -- constituency, stored as the string to its Wikipedia English entry
-- `photo` -- photo URL, simplified to filename
+- `constituency` -- constituency, as the string to its Wikipedia English entry
+- `photo` -- photo, as a local filename
 - `type` -- either "Deputat" or "Senator"
