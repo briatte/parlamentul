@@ -46,7 +46,10 @@ if (!file.exists(bills)) {
     
   }
   
+  b$name = gsub("\\n", "", b$name)
+  b$status = gsub("\\n", "", b$status)
   b$authors = NA
+  
   write.csv(b, bills, row.names = FALSE)
   
 }
@@ -117,6 +120,7 @@ if (length(l)) {
   
 }
 
+# will throw some 'returning Inf' warnings
 if (!file.exists(sponsors)) {
   
   a = unique(gsub("^/pls/", "", unlist(strsplit(b$authors, ";"))))
@@ -150,9 +154,9 @@ if (!file.exists(sponsors)) {
       # born = gsub("(.*)n\\.(.*)(\\d{4})", "\\3", nfo)
       born = str_extract(gsub("(.*)n\\.(.*)", "\\2", nfo), "[0-9]{4}")
       
-      # nb. mandates (counts both MP and senator mandates; many have both)
-#       mdts = xpathSApply(h, "//b[contains(text(), 'dep.') or contains(text(), 'sen.')]", xmlValue)
-#       mdts = sum(str_extract(mdts, "[0-9]{4}") <= l)
+      # # nb. mandates (counts both MP and senator mandates; many have both)
+      # mdts = xpathSApply(h, "//b[contains(text(), 'dep.') or contains(text(), 'sen.')]", xmlValue)
+      # mdts = sum(str_extract(mdts, "[0-9]{4}") <= l)
       
       mdts_ca = xpathSApply(h, "//b[contains(text(), 'dep.')]", xmlValue)
       if (length(mdts_ca))
@@ -328,8 +332,8 @@ s$party[ s$party %in% c("PD", "PDL", "FC") ] = "PD-L" # PD renamed to PD-L; FC (
 s$party[ s$party == "PUR-SL" ] = "PC" # renamed (Conservatives, allied to PSD then PNL)
 s$party[ s$party %in% c("PAR", "PAC") ] = "PNL" # small parties, absorbed
 
-cbind(table(s$party, s$legislature), table(s$party))
-cbind(table(s$type, s$legislature), table(s$type))
+cbind(table(s$party, s$legislature, exclude = NULL), table(s$party, exclude = NULL))
+cbind(table(s$type, s$legislature, exclude = NULL), table(s$type, exclude = NULL))
 
 # finalize bills data
 b$au_type = NA
